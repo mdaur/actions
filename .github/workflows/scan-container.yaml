@@ -11,13 +11,14 @@ jobs:
   BuildContainer:
     runs-on: ["docker","amd64"]
 
-    # container:
-    #     # forgejo reference image with limitations e.g. docker cli missing
-    #     #image: node:21-bullseye
-    #     image: aquasec/trivy:latest
-    #     credentials:
-    #       username: ${{ secrets.REGISTRY_MDAUR_USER }}
-    #       password: ${{ secrets.REGISTRY_MDAUR_PASSWORD }}
+    container:
+        # forgejo reference image with limitations e.g. docker cli missing
+        #image: node:21-bullseye
+        image: docker:27-cli
+        # credentials:
+        #   username: ${{ secrets.REGISTRY_MDAUR_USER }}
+        #   password: ${{ secrets.REGISTRY_MDAUR_PASSWORD }}
+        options: "-v /container/run/docker.sock:/var/run/docker.sock"
     steps:
       - name: Setup trivy
         run: |
