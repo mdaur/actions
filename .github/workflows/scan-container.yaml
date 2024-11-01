@@ -1,0 +1,35 @@
+on:
+  push:
+  workflow_call:
+    inputs:
+      # e.g. cr.daur-online.de/mdaur/build-container
+      container-name:
+        required: true
+        type: string
+
+jobs:
+  BuildContainer:
+    runs-on: ["docker","amd64"]
+
+    # container:
+    #     # forgejo reference image with limitations e.g. docker cli missing
+    #     #image: node:21-bullseye
+    #     image: aquasec/trivy:latest
+    #     credentials:
+    #       username: ${{ secrets.REGISTRY_MDAUR_USER }}
+    #       password: ${{ secrets.REGISTRY_MDAUR_PASSWORD }}
+    steps:
+      - name: Setup trivy
+        run: |
+          docker volume create trivy-cache || /bin/true
+          docker pull aquasec/trivy:latest
+
+      - name: Scan container
+        run: |
+          docker run \
+            -v /container/run/docker.sock:/var/run/docker.sock \
+            -v trivy-cache:/root/.cache/ aquasec/trivy:latest \
+            image cr.daur-online.de/mdaur/squid-alpine:v0.0.1 
+
+
+
