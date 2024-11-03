@@ -1,4 +1,4 @@
-on: 
+on:
   workflow_call:
     inputs:
       # e.g. cr.daur-online.de/mdaur/build-container
@@ -7,7 +7,7 @@ on:
         type: string
       container-labels:
         required: true
-        type: string        
+        type: string
       # e.g. linux/amd64,linux/arm64
       platforms:
         required: true
@@ -80,21 +80,22 @@ jobs:
         #   [ ! -d $HOME/.docker ] && mkdir $HOME/.docker
         #   echo "${{ secrets.REGISTRY_MDAUR }}" > $HOME/.docker/config.json
         #   cat $HOME/.docker/config.json
-        uses: https://github.com/docker/login-action@v3
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.REGISTRY_MDAUR_URL }}
           username: ${{ secrets.REGISTRY_MDAUR_USER }}
           password: ${{ secrets.REGISTRY_MDAUR_PASSWORD }}
 
       - name: Build Multi Arch Container Image
-        uses: https://github.com/docker/build-push-action@v6
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
           #load: true     # requires docker socket/ config
           pull: true
           push: true
-          # setting platforms will automatically select builder defined 
+          # setting platforms will automatically select builder defined
           # in step setupBuilder per architecture and build multi-arch image
           platforms: ${{ inputs.platforms }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -102,3 +103,23 @@ jobs:
           #network: bridge
           #outputs: type=docker,dest=/tmp/myimage.tar
           #endpoint:
+
+      - name: Send telegram message
+        if: always()
+        uses: https://github.com/appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            Repository: ${{ github.repository }}
+            Ref: ${{  github.ref }}
+            Event: ${{  github.event_name }}
+            Status: ${{steps.build.conclusion}}
+            Changes: https://scm.daur-online.de//${{ github.repository }}/commit/${{ github.sha }}
+            ${{ github.actor }} pushed commit with message:
+            ${{ github.event.commits[0].message }}
+
+      #forgejo 9.0.1+gitea-1.22.0 seems not to support this kind of output
+      # - name: Test forgejo step output
+      #   run: |
+      #     echo "### Hello" >> $GITHUB_STEP_SUMMARY
